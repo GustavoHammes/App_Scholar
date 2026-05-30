@@ -1,197 +1,404 @@
-# 🎓 App Scholar — Sistema de Boletim Acadêmico
+# App Scholar — Sistema Acadêmico Web e Mobile
 
-**FATEC Jacareí · Desenvolvimento de Software Multiplataforma**
+Projeto desenvolvido para a disciplina de **Programação Mobile** da **FATEC Jacareí**.
 
-Sistema web completo de gerenciamento acadêmico com três perfis de acesso: **Administrador**, **Professor** e **Aluno**.
+O **App Scholar** é um sistema acadêmico completo, com backend, painel web e aplicativo mobile. A proposta é permitir o gerenciamento de alunos, professores, disciplinas e notas, com controle de acesso por perfil.
 
----
+O sistema possui três perfis principais:
 
-## 📋 Requisitos
-
-- Node.js >= 18
-- PostgreSQL >= 14
-- npm >= 9
+- **Administrador:** gerencia usuários, alunos, professores, disciplinas e notas.
+- **Professor:** visualiza suas disciplinas e lança notas dos alunos.
+- **Aluno:** consulta seus dados, disciplinas e boletim acadêmico.
 
 ---
 
-## 🚀 Como rodar localmente
+## Tecnologias utilizadas
 
-### 1. Clone o projeto e acesse a pasta raiz
+### Backend
 
-```bash
-git clone <url-do-repositorio>
-cd app-scholar
+- Node.js
+- Express
+- TypeScript
+- Prisma ORM
+- PostgreSQL
+- JWT para autenticação
+- bcryptjs para criptografia de senhas
+
+### Frontend Web
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Axios
+- React Hot Toast
+- Lucide React
+
+### Mobile
+
+- React Native
+- Expo
+- Expo Router
+- TypeScript
+- Axios
+- AsyncStorage
+- Expo Go
+
+---
+
+## Funcionalidades
+
+### Autenticação
+
+- Login com e-mail e senha
+- Token JWT
+- Controle de sessão
+- Redirecionamento conforme o perfil do usuário
+- Proteção de rotas
+
+### Administrador
+
+- Cadastro e gerenciamento de alunos
+- Cadastro e gerenciamento de professores
+- Cadastro e gerenciamento de disciplinas
+- Lançamento e edição de notas
+- Visualização geral do sistema
+
+### Professor
+
+- Visualização de professores
+- Visualização das próprias disciplinas
+- Consulta de alunos
+- Lançamento de notas
+- Consulta de boletins relacionados às suas turmas
+
+### Aluno
+
+- Consulta do próprio boletim
+- Visualização de disciplinas
+- Visualização e edição de dados pessoais
+- Troca de senha
+- Acesso pelo aplicativo mobile via Expo Go
+
+---
+
+## Estrutura do projeto
+
+```txt
+app-scholar/
+├── backend/                  # API Node.js + Express + Prisma
+│   ├── prisma/
+│   │   ├── schema.prisma     # Modelagem do banco de dados
+│   │   └── seed.ts           # Dados iniciais para teste
+│   └── src/
+│       ├── controllers/      # Regras de negócio
+│       ├── routes/           # Rotas da API
+│       ├── middleware/       # Autenticação e permissões
+│       ├── lib/              # Configurações auxiliares
+│       └── server.ts         # Inicialização do servidor
+│
+├── frontend/                 # Painel web em Next.js
+│   └── src/
+│       ├── app/              # Páginas e rotas
+│       ├── components/       # Componentes reutilizáveis
+│       ├── contexts/         # Contexto de autenticação
+│       ├── lib/              # Cliente Axios
+│       └── types/            # Tipagens TypeScript
+│
+├── mobile/                   # Aplicativo mobile em Expo
+│   ├── app/                  # Rotas do Expo Router
+│   ├── components/           # Componentes visuais
+│   ├── contexts/             # Contexto de autenticação
+│   ├── constants/            # Configurações, cores e API
+│   ├── lib/                  # Cliente Axios
+│   └── types/                # Tipagens TypeScript
+│
+├── package.json              # Scripts principais do monorepo
+└── README.md
 ```
 
-### 2. Configure as variáveis de ambiente
+---
 
-**Backend:**
+## Requisitos
+
+Antes de rodar o projeto, é necessário ter instalado:
+
+- Node.js 18 ou superior
+- npm
+- PostgreSQL
+- Expo Go no celular, caso queira testar o aplicativo mobile
+
+---
+
+## Configuração do backend
+
+Acesse a pasta do backend:
+
 ```bash
-cp backend/.env.example backend/.env
+cd backend
 ```
 
-Edite `backend/.env` com os dados do seu PostgreSQL:
+Crie o arquivo `.env` com base no exemplo:
+
+```bash
+cp .env.example .env
+```
+
+Configure a conexão com o PostgreSQL:
+
 ```env
 DATABASE_URL="postgresql://postgres:sua_senha@localhost:5432/app_scholar"
 JWT_SECRET="sua_chave_secreta_aqui"
+JWT_EXPIRES_IN="7d"
+PORT=3001
+NODE_ENV="development"
 ```
 
-**Frontend:**
+Depois, volte para a raiz do projeto:
+
 ```bash
-cp frontend/.env.local.example frontend/.env.local
+cd ..
 ```
 
-### 3. Instale todas as dependências
+---
+
+## Configuração do frontend web
+
+Acesse a pasta do frontend:
+
+```bash
+cd frontend
+```
+
+Crie o arquivo `.env.local` com base no exemplo:
+
+```bash
+cp .env.local.example .env.local
+```
+
+Conteúdo esperado:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
+
+Depois, volte para a raiz:
+
+```bash
+cd ..
+```
+
+---
+
+## Instalação
+
+Na raiz do projeto, instale todas as dependências:
 
 ```bash
 npm run install:all
 ```
 
-### 4. Configure o banco de dados (migração + seed)
+Esse comando instala as dependências da raiz, do backend, do frontend e do mobile.
+
+---
+
+## Banco de dados
+
+Para criar as tabelas e popular o banco com dados de teste, execute:
 
 ```bash
-cd backend && npm run db:setup
+npm run db:setup
 ```
 
-Isso irá:
-- Criar o banco de dados automaticamente
-- Executar todas as migrations do Prisma
-- Popular com dados fictícios para teste
+Para resetar o banco e popular novamente:
 
-### 5. Inicie o projeto completo (frontend + backend)
+```bash
+npm run db:reset
+```
 
-Da raiz do projeto:
+O seed cria usuários de teste, professores, alunos, cursos, disciplinas e notas.
+
+---
+
+## Como rodar o backend e o frontend web
+
+Na raiz do projeto, execute:
+
 ```bash
 npm run dev
 ```
 
-Ou da pasta frontend:
+Esse comando inicia:
+
+- Backend: `http://localhost:3001`
+- Frontend web: `http://localhost:3000`
+
+Teste a API pelo health check:
+
+```txt
+http://localhost:3001/health
+```
+
+---
+
+## Como rodar o aplicativo mobile com Expo Go
+
+Acesse a pasta do app mobile:
+
 ```bash
-cd frontend && npm run dev
+cd mobile
 ```
 
-- **Frontend:** http://localhost:3000
-- **Backend:** http://localhost:3001
-- **API Health:** http://localhost:3001/health
+Antes de iniciar, configure o IP local da sua máquina no arquivo:
+
+```txt
+mobile/constants/api.ts
+```
+
+Procure esta linha:
+
+```ts
+const IP_LOCAL = "SEU_IP_AQUI";
+```
+
+Substitua pelo IPv4 do computador onde o backend está rodando.
+
+No Windows, descubra o IP com:
+
+```bash
+ipconfig
+```
+
+Procure por **Endereço IPv4**.
+
+Exemplo:
+
+```ts
+const IP_LOCAL = "192.168.1.105";
+```
+
+Depois rode:
+
+```bash
+npm run dev
+```
+
+Abra o aplicativo **Expo Go** no celular e escaneie o QR Code exibido no terminal.
+
+Importante: o computador e o celular precisam estar conectados na mesma rede Wi-Fi.
 
 ---
 
-## 🔐 Dados de Acesso para Teste
+## Dados de acesso para teste
 
-| Perfil | E-mail | Senha |
-|--------|--------|-------|
-| **Admin** | admin@scholar.fatec.br | Admin@123 |
-| **Professor** | carlos.souza@scholar.fatec.br | Prof@2024 |
-| **Professor** | ana.lima@scholar.fatec.br | Prof@2024 |
-| **Professor** | roberto.fernandes@scholar.fatec.br | Prof@2024 |
-| **Aluno** | gustavo.hammes@aluno.fatec.br | Aluno@2024 |
-| **Aluno** | mariana.costa@aluno.fatec.br | Aluno@2024 |
-| **Aluno** | pedro.alves@aluno.fatec.br | Aluno@2024 |
-| **Aluno** | julia.santos@aluno.fatec.br | Aluno@2024 |
-| **Aluno** | rafael.lima@aluno.fatec.br | Aluno@2024 |
+### Administrador
 
-> Os alunos são marcados com `primeiroAcesso: true` — ao logar serão redirecionados para trocar a senha.
-
----
-
-## 📁 Estrutura do Projeto
-
+```txt
+E-mail: admin@scholar.fatec.br
+Senha: Admin@123
 ```
-app-scholar/
-├── package.json                    # Raiz: concurrently para rodar tudo com npm run dev
-│
-├── backend/                        # Node.js + Express + TypeScript + Prisma
-│   ├── prisma/
-│   │   ├── schema.prisma           # Modelo de dados: Usuario, Aluno, Professor, Disciplina, Nota
-│   │   └── seed.ts                 # Dados fictícios para teste local
-│   └── src/
-│       ├── server.ts               # Ponto de entrada do Express
-│       ├── lib/prisma.ts           # Singleton do Prisma Client
-│       ├── middleware/
-│       │   ├── auth.middleware.ts  # Validação do JWT
-│       │   └── role.middleware.ts  # Controle de acesso por perfil (RBAC)
-│       ├── controllers/            # Lógica de negócio por recurso
-│       └── routes/                 # Definição dos endpoints REST
-│
-└── frontend/                       # Next.js 14 + TypeScript + Tailwind CSS
-    └── src/
-        ├── app/
-        │   ├── login/              # Página de login
-        │   └── dashboard/          # Área autenticada
-        │       ├── page.tsx        # Painel principal (por perfil)
-        │       ├── alunos/         # Gerenciamento de alunos
-        │       ├── professores/    # Gerenciamento de professores
-        │       ├── disciplinas/    # Gerenciamento de disciplinas
-        │       ├── notas/          # Lançamento de notas
-        │       ├── boletim/        # Boletim do aluno
-        │       ├── perfil/         # Dados pessoais + troca de senha
-        │       └── admin/          # Painel administrativo
-        ├── components/
-        │   ├── layout/             # Sidebar e Header
-        │   └── ui/                 # Componentes reutilizáveis
-        ├── contexts/AuthContext.tsx # Estado global de autenticação
-        ├── lib/api.ts              # Cliente Axios com interceptors
-        └── types/index.ts          # Interfaces TypeScript
+
+### Professor
+
+```txt
+E-mail: carlos.souza@scholar.fatec.br
+Senha: Prof@2024
+```
+
+```txt
+E-mail: ana.lima@scholar.fatec.br
+Senha: Prof@2024
+```
+
+### Aluno
+
+Os alunos são gerados automaticamente pelo seed.
+
+```txt
+Senha padrão dos alunos: Aluno@2024
+```
+
+Caso algum e-mail específico não funcione, confira os usuários gerados no arquivo:
+
+```txt
+backend/prisma/seed.ts
 ```
 
 ---
 
-## 🔒 Permissões por Perfil
+## Regra de cálculo das notas
+
+A média do aluno é calculada automaticamente pelo backend:
+
+```txt
+média = (nota1 + nota2) / 2
+```
+
+Situações possíveis:
+
+```txt
+Média maior ou igual a 6.0  → Aprovado
+Média maior ou igual a 4.0  → Recuperação
+Média menor que 4.0        → Reprovado
+```
+
+---
+
+## Permissões por perfil
 
 | Funcionalidade | Admin | Professor | Aluno |
-|----------------|-------|-----------|-------|
-| Ver todos os alunos | ✅ | ✅ (suas turmas) | ❌ |
-| Criar aluno | ✅ | ❌ | ❌ |
-| Editar aluno | ✅ (tudo) | ❌ | ✅ (próprios dados) |
-| Ver professores | ✅ | ✅ | ✅ |
-| Criar professor | ✅ | ❌ | ❌ |
-| Editar professor | ✅ (tudo) | ✅ (próprios dados) | ❌ |
-| Ver disciplinas | ✅ | ✅ (próprias) | ✅ |
-| Criar disciplina | ✅ | ❌ | ❌ |
-| Editar disciplina | ✅ (tudo) | ✅ (descrição/CH) | ❌ |
-| Lançar notas | ✅ | ✅ (próprias disciplinas) | ❌ |
-| Ver boletim | ✅ | ✅ (seus alunos) | ✅ (próprio) |
+|---|---:|---:|---:|
+| Visualizar alunos | Sim | Sim | Não |
+| Cadastrar alunos | Sim | Não | Não |
+| Editar aluno | Sim | Não | Apenas próprios dados |
+| Visualizar professores | Sim | Sim | Sim |
+| Cadastrar professores | Sim | Não | Não |
+| Editar professor | Sim | Apenas próprios dados | Não |
+| Visualizar disciplinas | Sim | Próprias disciplinas | Sim |
+| Cadastrar disciplinas | Sim | Não | Não |
+| Lançar notas | Sim | Sim | Não |
+| Visualizar boletim | Sim | Sim | Apenas próprio boletim |
 
 ---
 
-## 🛠️ Tecnologias
-
-**Backend**
-- Node.js + Express + TypeScript
-- Prisma ORM + PostgreSQL
-- JWT + bcryptjs
-- Arquitetura: Controllers → Routes → Middleware
-
-**Frontend**
-- Next.js 14 (App Router) + TypeScript
-- Tailwind CSS (paleta neutra)
-- Axios (cliente HTTP com interceptors)
-- React Hot Toast (notificações)
-- Lucide React (ícones)
-
----
-
-## 📌 Regra de Cálculo de Notas
-
-```
-média = (nota1 + nota2) / 2
-
->= 6.0  → Aprovado
->= 4.0  → Recuperação
-< 4.0   → Reprovado
-```
-
-A média e situação são **calculadas automaticamente** no backend ao salvar as notas.
-
----
-
-## 🔄 Scripts Disponíveis
+## Scripts disponíveis
 
 | Comando | Descrição |
-|---------|-----------|
-| `npm run dev` (raiz) | Inicia frontend e backend simultaneamente |
-| `npm run install:all` | Instala dependências de todos os pacotes |
-| `cd backend && npm run db:setup` | Migra e popula o banco de dados |
-| `cd backend && npm run db:reset` | Reseta e repopula o banco |
-| `cd backend && npm run dev` | Inicia apenas o backend |
-| `cd frontend && npm run dev` | Inicia apenas o frontend |
+|---|---|
+| `npm run install:all` | Instala as dependências da raiz, backend, frontend e mobile |
+| `npm run dev` | Inicia backend e frontend web ao mesmo tempo |
+| `npm run dev:backend` | Inicia apenas o backend |
+| `npm run dev:frontend` | Inicia apenas o frontend web |
+| `npm run dev:mobile` | Inicia o aplicativo mobile com Expo |
+| `npm run db:setup` | Sincroniza o banco e executa o seed |
+| `npm run db:reset` | Reseta o banco e executa o seed novamente |
+| `npm run build` | Gera build do backend e frontend |
+
+---
+
+## Como testar o projeto
+
+1. Inicie o PostgreSQL.
+2. Configure o `.env` do backend.
+3. Rode `npm run install:all`.
+4. Rode `npm run db:setup`.
+5. Rode `npm run dev`.
+6. Acesse o frontend web em `http://localhost:3000`.
+7. Para testar no celular, rode `npm run dev:mobile` e abra pelo Expo Go.
+
+---
+
+## Observações sobre o mobile
+
+O aplicativo mobile foi desenvolvido para funcionar no celular usando **Expo Go**.
+
+Como o backend roda localmente no computador, é necessário configurar o IP local da máquina no arquivo `mobile/constants/api.ts`.
+
+O uso de `localhost` não funciona em celular físico, pois o celular entende `localhost` como ele mesmo, e não como o computador onde o backend está rodando.
+
+---
+
+## Autor
+
+Desenvolvido por **Gustavo Hammes**  
+FATEC Jacareí — Desenvolvimento de Software Multiplataforma
