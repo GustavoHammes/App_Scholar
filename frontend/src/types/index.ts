@@ -4,10 +4,8 @@
  * Devem espelhar os modelos do Prisma no backend.
  */
 
-// Perfis de acesso disponíveis no sistema
 export type Perfil = "ADMIN" | "PROFESSOR" | "ALUNO";
 
-// Dados do usuário autenticado (armazenados no contexto de auth)
 export interface Usuario {
   id: number;
   email: string;
@@ -16,19 +14,42 @@ export interface Usuario {
   primeiroAcesso: boolean;
 }
 
-// Dados de um aluno
+export interface Curso {
+  id: number;
+  nome: string;
+  area: string;
+  duracaoSemestres: number;
+  descricao?: string | null;
+  ativo: boolean;
+  coordenadorId?: number | null;
+  criadoEm?: string;
+  atualizadoEm?: string;
+  coordenador?: {
+    id: number;
+    nome: string;
+    titulacao?: string | null;
+    area?: string | null;
+  } | null;
+  _count?: {
+    alunos: number;
+    disciplinas: number;
+  };
+}
+
 export interface Aluno {
   id: number;
   usuarioId: number;
   nome: string;
   matricula: string;
-  curso: string;
+  cursoId: number;
+  curso?: Curso;
   telefone?: string;
   cep?: string;
   endereco?: string;
   cidade?: string;
   estado?: string;
   criadoEm?: string;
+  atualizadoEm?: string;
   usuario?: {
     email: string;
     primeiroAcesso: boolean;
@@ -37,7 +58,6 @@ export interface Aluno {
   notas?: Nota[];
 }
 
-// Dados de um professor
 export interface Professor {
   id: number;
   usuarioId: number;
@@ -50,26 +70,29 @@ export interface Professor {
     ativo?: boolean;
   };
   disciplinas?: Disciplina[];
+  cursosCoordenados?: Curso[];
 }
 
-// Dados de uma disciplina
 export interface Disciplina {
   id: number;
   nome: string;
   cargaHoraria: number;
   professorId: number;
-  curso: string;
+  cursoId: number;
+  curso?: Curso;
   semestre: number;
   descricao?: string;
+  ativo?: boolean;
   professor?: {
     nome: string;
     titulacao?: string;
     area?: string;
   };
-  _count?: { notas: number };
+  _count?: {
+    notas: number;
+  };
 }
 
-// Dados de uma nota
 export interface Nota {
   id: number;
   alunoId: number;
@@ -78,11 +101,17 @@ export interface Nota {
   nota2?: number;
   media?: number;
   situacao?: "Aprovado" | "Recuperação" | "Reprovado";
-  aluno?: { nome: string; matricula: string };
-  disciplina?: Disciplina & { professor?: { nome: string } };
+  aluno?: {
+    nome: string;
+    matricula: string;
+  };
+  disciplina?: Disciplina & {
+    professor?: {
+      nome: string;
+    };
+  };
 }
 
-// Resposta do endpoint de boletim
 export interface Boletim {
   aluno: string;
   matricula: string;
@@ -99,7 +128,6 @@ export interface Boletim {
   }>;
 }
 
-// Dados retornados pelo endpoint de endereço (ViaCEP)
 export interface EnderecoViaCEP {
   logradouro: string;
   bairro: string;
@@ -108,5 +136,4 @@ export interface EnderecoViaCEP {
   erro?: boolean;
 }
 
-// Estado de um formulário (erros por campo)
 export type FormErrors<T> = Partial<Record<keyof T, string>>;

@@ -4,21 +4,17 @@
  *
  * Permissões:
  * - ADMIN: acesso total (criar, listar, editar tudo)
- * - PROFESSOR: listar todas e editar campos informativos da própria disciplina
+ * - PROFESSOR: listar as próprias disciplinas e editar campos informativos
  * - ALUNO: somente visualização
  */
 
 import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 
-// ─────────────────────────────────────────────
-// LISTAR DISCIPLINAS
-// ─────────────────────────────────────────────
 export async function listar(req: Request, res: Response) {
   const { perfil, id: usuarioId } = req.user!;
 
   try {
-    // Se for professor, filtra apenas as disciplinas que ele leciona
     if (perfil === "PROFESSOR") {
       const professor = await prisma.professor.findFirst({
         where: { usuarioId },
@@ -29,22 +25,49 @@ export async function listar(req: Request, res: Response) {
       const disciplinas = await prisma.disciplina.findMany({
         where: { professorId: professor.id },
         include: {
-          professor: { select: { nome: true } },
-          _count: { select: { notas: true } }, // Quantidade de alunos com notas
+          curso: true,
+          professor: {
+            select: {
+              nome: true,
+              titulacao: true,
+              area: true,
+            },
+          },
+          _count: {
+            select: {
+              notas: true,
+            },
+          },
         },
-        orderBy: { nome: "asc" },
+        orderBy: [
+          { semestre: "asc" },
+          { nome: "asc" },
+        ],
       });
 
       return res.json(disciplinas);
     }
 
-    // Admin e Aluno veem todas as disciplinas
     const disciplinas = await prisma.disciplina.findMany({
       include: {
-        professor: { select: { nome: true, titulacao: true, area: true } },
-        _count: { select: { notas: true } },
+        curso: true,
+        professor: {
+          select: {
+            nome: true,
+            titulacao: true,
+            area: true,
+          },
+        },
+        _count: {
+          select: {
+            notas: true,
+          },
+        },
       },
-      orderBy: { semestre: "asc" },
+      orderBy: [
+        { semestre: "asc" },
+        { nome: "asc" },
+      ],
     });
 
     return res.json(disciplinas);
@@ -54,9 +77,6 @@ export async function listar(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────
-// BUSCAR POR ID
-// ─────────────────────────────────────────────
 export async function buscarPorId(req: Request, res: Response) {
   const { id } = req.params;
 
@@ -64,14 +84,30 @@ export async function buscarPorId(req: Request, res: Response) {
     const disciplina = await prisma.disciplina.findUnique({
       where: { id: Number(id) },
       include: {
+        curso: true,
         professor: {
-          include: { usuario: { select: { email: true } } },
+          include: {
+            usuario: {
+              select: {
+                email: true,
+              },
+            },
+          },
         },
         notas: {
           include: {
-            aluno: { select: { nome: true, matricula: true } },
+            aluno: {
+              select: {
+                nome: true,
+                matricula: true,
+              },
+            },
           },
-          orderBy: { aluno: { nome: "asc" } },
+          orderBy: {
+            aluno: {
+              nome: "asc",
+            },
+          },
         },
       },
     });
@@ -87,20 +123,16 @@ export async function buscarPorId(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────
-// CRIAR DISCIPLINA (somente ADMIN)
-// ─────────────────────────────────────────────
 export async function criar(req: Request, res: Response) {
-  const { nome, cargaHoraria, professorId, curso, semestre, descricao } = req.body;
+  const { nome, cargaHoraria, professorId, cursoId, semestre, descricao, ativo } = req.body;
 
-  if (!nome || !cargaHoraria || !professorId || !curso || !semestre) {
+  if (!nome || !cargaHoraria || !professorId || !cursoId || !semestre) {
     return res.status(400).json({
       error: "Nome, carga horária, professor, curso e semestre são obrigatórios",
     });
   }
 
   try {
-    // Verifica se o professor existe
     const professor = await prisma.professor.findUnique({
       where: { id: Number(professorId) },
     });
@@ -109,16 +141,37 @@ export async function criar(req: Request, res: Response) {
       return res.status(404).json({ error: "Professor não encontrado" });
     }
 
+    const curso = await prisma.curso.findUnique({
+      where: { id: Number(cursoId) },
+    });
+
+    if (!curso || !curso.ativo) {
+      return res.status(404).json({ error: "Curso não encontrado ou inativo" });
+    }
+
     const disciplina = await prisma.disciplina.create({
       data: {
         nome,
         cargaHoraria: Number(cargaHoraria),
         professorId: Number(professorId),
-        curso,
+        cursoId: Number(cursoId),
         semestre: Number(semestre),
         descricao,
+        ativo: ativo ?? true,
       },
-      include: { professor: { select: { nome: true } } },
+      include: {
+        curso: true,
+        professor: {
+          select: {
+            nome: true,
+          },
+        },
+        _count: {
+          select: {
+            notas: true,
+          },
+        },
+      },
     });
 
     return res.status(201).json(disciplina);
@@ -128,11 +181,6 @@ export async function criar(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────
-// ATUALIZAR DISCIPLINA
-// Admin: edita tudo (incluindo professor responsável)
-// Professor: edita apenas campos informativos da própria disciplina (descrição, carga horária)
-// ─────────────────────────────────────────────
 export async function atualizar(req: Request, res: Response) {
   const { id } = req.params;
   const { perfil, id: usuarioId } = req.user!;
@@ -140,45 +188,86 @@ export async function atualizar(req: Request, res: Response) {
   try {
     const disciplina = await prisma.disciplina.findUnique({
       where: { id: Number(id) },
-      include: { professor: true },
+      include: {
+        professor: true,
+      },
     });
 
     if (!disciplina) {
       return res.status(404).json({ error: "Disciplina não encontrada" });
     }
 
-    // Professor só pode editar as próprias disciplinas
     if (perfil === "PROFESSOR") {
       if (disciplina.professor.usuarioId !== usuarioId) {
         return res.status(403).json({ error: "Acesso negado" });
       }
 
-      // Professor pode editar apenas descrição e carga horária
       const { descricao, cargaHoraria } = req.body;
 
       const atualizada = await prisma.disciplina.update({
         where: { id: Number(id) },
         data: {
           ...(descricao !== undefined && { descricao }),
-          ...(cargaHoraria && { cargaHoraria: Number(cargaHoraria) }),
+          ...(cargaHoraria !== undefined && { cargaHoraria: Number(cargaHoraria) }),
+        },
+        include: {
+          curso: true,
+          professor: {
+            select: {
+              nome: true,
+            },
+          },
         },
       });
 
       return res.json(atualizada);
     }
 
-    // Admin pode editar todos os campos
-    const { nome, cargaHoraria, professorId, curso, semestre, descricao } = req.body;
+    const { nome, cargaHoraria, professorId, cursoId, semestre, descricao, ativo } = req.body;
+
+    if (professorId) {
+      const professor = await prisma.professor.findUnique({
+        where: { id: Number(professorId) },
+      });
+
+      if (!professor) {
+        return res.status(404).json({ error: "Professor não encontrado" });
+      }
+    }
+
+    if (cursoId) {
+      const curso = await prisma.curso.findUnique({
+        where: { id: Number(cursoId) },
+      });
+
+      if (!curso || !curso.ativo) {
+        return res.status(404).json({ error: "Curso não encontrado ou inativo" });
+      }
+    }
 
     const atualizada = await prisma.disciplina.update({
       where: { id: Number(id) },
       data: {
-        ...(nome && { nome }),
-        ...(cargaHoraria && { cargaHoraria: Number(cargaHoraria) }),
-        ...(professorId && { professorId: Number(professorId) }),
-        ...(curso && { curso }),
-        ...(semestre && { semestre: Number(semestre) }),
+        ...(nome !== undefined && { nome }),
+        ...(cargaHoraria !== undefined && { cargaHoraria: Number(cargaHoraria) }),
+        ...(professorId !== undefined && { professorId: Number(professorId) }),
+        ...(cursoId !== undefined && { cursoId: Number(cursoId) }),
+        ...(semestre !== undefined && { semestre: Number(semestre) }),
         ...(descricao !== undefined && { descricao }),
+        ...(ativo !== undefined && { ativo: Boolean(ativo) }),
+      },
+      include: {
+        curso: true,
+        professor: {
+          select: {
+            nome: true,
+          },
+        },
+        _count: {
+          select: {
+            notas: true,
+          },
+        },
       },
     });
 
@@ -189,13 +278,37 @@ export async function atualizar(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────
-// DELETAR DISCIPLINA (somente ADMIN)
-// ─────────────────────────────────────────────
 export async function deletar(req: Request, res: Response) {
   const { id } = req.params;
 
   try {
+    const disciplina = await prisma.disciplina.findUnique({
+      where: { id: Number(id) },
+      include: {
+        _count: {
+          select: {
+            notas: true,
+          },
+        },
+      },
+    });
+
+    if (!disciplina) {
+      return res.status(404).json({ error: "Disciplina não encontrada" });
+    }
+
+    if (disciplina._count.notas > 0) {
+      const desativada = await prisma.disciplina.update({
+        where: { id: Number(id) },
+        data: { ativo: false },
+      });
+
+      return res.json({
+        message: "Disciplina possui notas vinculadas. Ela foi desativada para preservar o histórico.",
+        disciplina: desativada,
+      });
+    }
+
     await prisma.disciplina.delete({
       where: { id: Number(id) },
     });

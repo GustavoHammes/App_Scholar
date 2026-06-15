@@ -21,7 +21,7 @@
 import Constants from "expo-constants";
 
 // ─── CONFIGURE SEU IP LOCAL AQUI ────────────────────────────
-const IP_LOCAL = "192.168.137.167"; // ← troque pelo seu IP local
+const IP_LOCAL = "10.68.54.51"; // ← troque pelo seu IP local
 // ─────────────────────────────────────────────────────────────
 
 const PORTA_BACKEND = "3001";

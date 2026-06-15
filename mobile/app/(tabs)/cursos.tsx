@@ -1,7 +1,6 @@
 /**
- * Tela de Alunos — Mobile
- * Admin: lista completa com busca
- * Professor: alunos das suas turmas
+ * Tela de Cursos — Mobile
+ * Lista cursos cadastrados e permite busca por nome, área ou coordenador.
  */
 
 import { useEffect, useState } from "react";
@@ -18,10 +17,10 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { Spinner, Cores, Card, EstadoVazio } from "@/components/ui";
 import api from "@/lib/api";
-import { Aluno } from "@/types";
+import { Curso } from "@/types";
 
-export default function AlunosScreen() {
-  const [alunos, setAlunos] = useState<Aluno[]>([]);
+export default function CursosScreen() {
+  const [cursos, setCursos] = useState<Curso[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
   const [busca, setBusca] = useState("");
@@ -32,24 +31,23 @@ export default function AlunosScreen() {
 
   async function carregar() {
     try {
-      const res = await api.get("/alunos");
-      setAlunos(res.data);
+      const res = await api.get("/cursos?incluirInativos=true");
+      setCursos(res.data);
     } catch {
-      Alert.alert("Erro", "Não foi possível carregar os alunos.");
+      Alert.alert("Erro", "Não foi possível carregar os cursos.");
     } finally {
       setCarregando(false);
       setAtualizando(false);
     }
   }
 
-  const filtrados = alunos.filter((a) => {
+  const filtrados = cursos.filter((curso) => {
     const termo = busca.toLowerCase();
-    const nomeCurso = a.curso?.nome ?? "";
 
     return (
-      a.nome.toLowerCase().includes(termo) ||
-      a.matricula.toLowerCase().includes(termo) ||
-      nomeCurso.toLowerCase().includes(termo)
+      curso.nome.toLowerCase().includes(termo) ||
+      curso.area.toLowerCase().includes(termo) ||
+      (curso.coordenador?.nome ?? "").toLowerCase().includes(termo)
     );
   });
 
@@ -67,13 +65,13 @@ export default function AlunosScreen() {
         <TextInput
           value={busca}
           onChangeText={setBusca}
-          placeholder="Buscar por nome, matrícula ou curso"
+          placeholder="Buscar por curso, área ou coordenador"
           placeholderTextColor={Cores.textoSecundario}
           style={estilos.buscaInput}
         />
       </View>
 
-      <Text style={estilos.contador}>{filtrados.length} aluno(s)</Text>
+      <Text style={estilos.contador}>{filtrados.length} curso(s)</Text>
 
       <FlatList
         data={filtrados}
@@ -90,44 +88,49 @@ export default function AlunosScreen() {
         }
         ListEmptyComponent={
           <EstadoVazio
-            titulo="Nenhum aluno encontrado"
-            descricao="Tente buscar por outro nome, matrícula ou curso."
+            titulo="Nenhum curso encontrado"
+            descricao="Os cursos cadastrados aparecerão aqui."
           />
         }
         renderItem={({ item }) => (
           <Card style={estilos.card}>
             <View style={estilos.cardTopo}>
-              <View style={estilos.avatar}>
-                <Text style={estilos.avatarLetra}>{item.nome.charAt(0)}</Text>
-              </View>
-
               <View style={{ flex: 1 }}>
                 <Text style={estilos.nome}>{item.nome}</Text>
-                <Text style={estilos.email}>{item.usuario?.email}</Text>
+                <Text style={estilos.area}>{item.area}</Text>
               </View>
 
-              {item.usuario?.primeiroAcesso && (
-                <View style={estilos.badgePrimeiroAcesso}>
-                  <Text style={estilos.badgePrimeiroAcessoTexto}>1º acesso</Text>
-                </View>
-              )}
+              <View
+                style={[
+                  estilos.status,
+                  { backgroundColor: item.ativo ? "#dcfce7" : "#fee2e2" },
+                ]}
+              >
+                <Text
+                  style={[
+                    estilos.statusTexto,
+                    { color: item.ativo ? "#166534" : "#991b1b" },
+                  ]}
+                >
+                  {item.ativo ? "Ativo" : "Inativo"}
+                </Text>
+              </View>
             </View>
 
             <View style={estilos.separador} />
 
             <View style={estilos.cardInfo}>
-              <InfoItem icone="id-card-outline" texto={`Matrícula: ${item.matricula}`} />
+              <InfoItem icone="time-outline" texto={`${item.duracaoSemestres} semestres`} />
               <InfoItem
-                icone="school-outline"
-                texto={`Curso: ${item.curso?.nome ?? "Curso não informado"}`}
+                icone="person-outline"
+                texto={`Coord.: ${item.coordenador?.nome ?? "Não definido"}`}
               />
-              {item.telefone && <InfoItem icone="call-outline" texto={item.telefone} />}
-              {item.cidade && (
-                <InfoItem
-                  icone="location-outline"
-                  texto={`${item.cidade}${item.estado ? `/${item.estado}` : ""}`}
-                />
-              )}
+              <InfoItem icone="people-outline" texto={`${item._count?.alunos ?? 0} aluno(s)`} />
+              <InfoItem
+                icone="book-outline"
+                texto={`${item._count?.disciplinas ?? 0} disciplina(s)`}
+              />
+              {item.descricao ? <Text style={estilos.descricao}>{item.descricao}</Text> : null}
             </View>
           </Card>
         )}
@@ -169,26 +172,13 @@ const estilos = StyleSheet.create({
   lista: { padding: 16, gap: 10, paddingBottom: 32 },
   card: { padding: 0 },
   cardTopo: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#e2e8f0",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarLetra: { fontSize: 16, fontWeight: "700", color: Cores.primario },
-  nome: { fontSize: 15, fontWeight: "600", color: Cores.textoPrincipal },
-  email: { fontSize: 12, color: Cores.textoSecundario, marginTop: 1 },
-  badgePrimeiroAcesso: {
-    backgroundColor: "#fef3c7",
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-  },
-  badgePrimeiroAcessoTexto: { fontSize: 10, color: "#92400e", fontWeight: "600" },
+  nome: { fontSize: 15, fontWeight: "700", color: Cores.textoPrincipal },
+  area: { fontSize: 12, color: Cores.textoSecundario, marginTop: 2 },
+  status: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  statusTexto: { fontSize: 11, fontWeight: "700" },
   separador: { height: 1, backgroundColor: Cores.borda },
-  cardInfo: { padding: 14, gap: 6 },
+  cardInfo: { padding: 14, gap: 7 },
   infoItem: { flexDirection: "row", alignItems: "center", gap: 8 },
   infoTexto: { fontSize: 13, color: Cores.textoSecundario, flex: 1 },
+  descricao: { marginTop: 6, fontSize: 13, color: Cores.textoSecundario, lineHeight: 18 },
 });

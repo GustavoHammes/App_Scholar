@@ -64,7 +64,7 @@ export default function DisciplinasScreen() {
             <View style={est.separador} />
             <View style={{ gap: 5 }}>
               <InfoRow icone="person-outline" texto={`Prof. ${item.professor?.nome ?? "—"}`} />
-              <InfoRow icone="school-outline" texto={item.curso} />
+              <InfoRow icone="school-outline" texto={item.curso?.nome ?? "Curso não informado"} />
               <InfoRow icone="time-outline" texto={`${item.cargaHoraria}h · ${item._count?.notas ?? 0} alunos`} />
             </View>
           </Card>

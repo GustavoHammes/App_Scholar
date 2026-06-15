@@ -19,7 +19,8 @@ enum Perfil {
 }
 
 // Tabela de usuários: responsável pela autenticação e perfil de acesso
-// Cada usuário tem exatamente um perfil relacionado (Aluno ou Professor)
+// Cada usuário tem exatamente um perfil relacionado: Aluno ou Professor.
+// O usuário ADMIN não possui vínculo obrigatório com Aluno ou Professor.
 model Usuario {
   id             Int      @id @default(autoincrement())
   email          String   @unique
@@ -30,92 +31,138 @@ model Usuario {
   criadoEm       DateTime @default(now())
   atualizadoEm   DateTime @updatedAt
 
-  // Relacionamentos opcionais — apenas um dos dois existirá para cada usuário
+  // Relacionamentos opcionais — apenas um dos dois existirá para professor/aluno
   aluno     Aluno?
   professor Professor?
 
-  @@map("usuarios") // Nome real da tabela no banco
+  @@map("usuarios")
+}
+
+// Tabela de cursos da instituição
+// Usada para cadastro, gerenciamento e vínculo com alunos e disciplinas
+model Curso {
+  id Int @id @default(autoincrement())
+
+  nome             String  @unique
+  area             String
+  duracaoSemestres Int
+  descricao        String?
+  ativo            Boolean @default(true)
+
+  // Professor responsável pela coordenação do curso
+  coordenadorId Int?
+  coordenador   Professor? @relation("CoordenadorCurso", fields: [coordenadorId], references: [id], onDelete: SetNull)
+
+  // Relacionamentos
+  alunos      Aluno[]
+  disciplinas Disciplina[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([coordenadorId])
+  @@map("cursos")
 }
 
 // Tabela de alunos com dados pessoais e acadêmicos
 model Aluno {
-  id           Int      @id @default(autoincrement())
-  usuarioId    Int      @unique
-  nome         String
-  matricula    String   @unique // Matrícula acadêmica única
-  curso        String
-  telefone     String?
-  cep          String?
-  endereco     String? // Preenchido automaticamente via ViaCEP
-  cidade       String?
-  estado       String?
+  id        Int @id @default(autoincrement())
+  usuarioId Int @unique
+
+  nome      String
+  matricula String @unique
+
+  // Vínculo real com a tabela de cursos
+  cursoId Int
+  curso   Curso @relation(fields: [cursoId], references: [id])
+
+  telefone String?
+  cep      String?
+  endereco String?
+  cidade   String?
+  estado   String?
+
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  // Relacionamento com o usuário de autenticação
   usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  notas   Nota[]
 
-  // Um aluno pode ter muitas notas (uma por disciplina)
-  notas Nota[]
-
+  @@index([cursoId])
   @@map("alunos")
 }
 
-// Tabela de professores com dados profissionais
+// Tabela de professores
 model Professor {
-  id            Int      @id @default(autoincrement())
-  usuarioId     Int      @unique
-  nome          String
-  titulacao     String? // Ex: Mestre, Doutor, Especialista
-  area          String? // Área de atuação
-  tempoDocencia Int? // Tempo de docência em anos
-  criadoEm      DateTime @default(now())
-  atualizadoEm  DateTime @updatedAt
+  id        Int @id @default(autoincrement())
+  usuarioId Int @unique
 
-  // Relacionamento com o usuário de autenticação
+  nome          String
+  titulacao     String?
+  area          String?
+  tempoDocencia Int?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
   usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
-  // Um professor pode lecionar várias disciplinas
+  // Disciplinas ministradas pelo professor
   disciplinas Disciplina[]
+
+  // Cursos coordenados pelo professor
+  cursosCoordenados Curso[] @relation("CoordenadorCurso")
 
   @@map("professores")
 }
 
-// Tabela de disciplinas — cada disciplina pertence a um professor
+// Tabela de disciplinas
 model Disciplina {
-  id           Int       @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+
   nome         String
   cargaHoraria Int
   professorId  Int
-  curso        String
-  semestre     Int
-  descricao    String?
-  ativo        Boolean   @default(true) // true = semestre atual | false = semestre encerrado (notas bloqueadas)
-  criadoEm     DateTime  @default(now())
-  atualizadoEm DateTime  @updatedAt
-  professor    Professor @relation(fields: [professorId], references: [id])
-  notas        Nota[]
 
-  @@map("disciplinas")
-}
+  // Vínculo real com a tabela de cursos
+  cursoId Int
+  curso   Curso @relation(fields: [cursoId], references: [id])
 
-// Tabela de notas — intersecção entre Aluno e Disciplina
-model Nota {
-  id           Int      @id @default(autoincrement())
-  alunoId      Int
-  disciplinaId Int
-  nota1        Float? // Primeira avaliação (0 a 10)
-  nota2        Float? // Segunda avaliação (0 a 10)
-  media        Float? // Calculada automaticamente: (nota1 + nota2) / 2
-  situacao     String? // "Aprovado", "Recuperação" ou "Reprovado"
+  semestre  Int
+  descricao String?
+  ativo     Boolean @default(true)
+
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  // Relacionamentos com aluno e disciplina
+  professor Professor @relation(fields: [professorId], references: [id])
+  notas     Nota[]
+
+  @@index([professorId])
+  @@index([cursoId])
+  @@map("disciplinas")
+}
+
+// Tabela de notas dos alunos por disciplina
+model Nota {
+  id Int @id @default(autoincrement())
+
+  alunoId      Int
+  disciplinaId Int
+
+  nota1    Float
+  nota2    Float
+  media    Float
+  situacao String
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
   aluno      Aluno      @relation(fields: [alunoId], references: [id], onDelete: Cascade)
   disciplina Disciplina @relation(fields: [disciplinaId], references: [id], onDelete: Cascade)
 
-  // Um aluno só pode ter uma nota por disciplina
+  // Evita lançar duas notas para o mesmo aluno na mesma disciplina
   @@unique([alunoId, disciplinaId])
+  @@index([disciplinaId])
   @@map("notas")
 }

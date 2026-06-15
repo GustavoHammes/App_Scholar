@@ -2,29 +2,47 @@
 
 /**
  * Página de Disciplinas
- * Admin: CRUD completo (criar, editar tudo, deletar)
- * Professor: visualiza as próprias e pode editar descrição/carga horária
- * Aluno: somente visualização
+ * Admin: CRUD completo
+ * Professor: visualiza suas disciplinas e edita descrição/carga horária
+ * Aluno: visualização das disciplinas do próprio curso
  */
 
 import { useEffect, useState } from "react";
-import { Plus, Search, Pencil, Trash2, BookOpen } from "lucide-react";
+import { BookOpen, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
-import { useAuth } from "@/contexts/AuthContext";
+
 import {
-  PaginaContainer, Tabela, Modal, ModalConfirmacao,
-  CampoForm, EstadoVazio, Spinner, Badge,
+  Badge,
+  CampoForm,
+  EstadoVazio,
+  Modal,
+  ModalConfirmacao,
+  PaginaContainer,
+  Spinner,
+  Tabela,
 } from "@/components/ui";
+import { useAuth } from "@/contexts/AuthContext";
 import api from "@/lib/api";
-import { Disciplina, Professor } from "@/types";
+import { Aluno, Curso, Disciplina, Professor } from "@/types";
 
 interface FormDisciplina {
-  nome: string; cargaHoraria: string; professorId: string;
-  curso: string; semestre: string; descricao: string;
+  nome: string;
+  cargaHoraria: string;
+  professorId: string;
+  cursoId: string;
+  semestre: string;
+  descricao: string;
+  ativo: boolean;
 }
 
 const FORM_VAZIO: FormDisciplina = {
-  nome: "", cargaHoraria: "", professorId: "", curso: "", semestre: "", descricao: "",
+  nome: "",
+  cargaHoraria: "",
+  professorId: "",
+  cursoId: "",
+  semestre: "",
+  descricao: "",
+  ativo: true,
 };
 
 export default function DisciplinasPage() {
@@ -34,59 +52,67 @@ export default function DisciplinasPage() {
 
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
   const [professores, setProfessores] = useState<Professor[]>([]);
+  const [cursos, setCursos] = useState<Curso[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState("");
+
   const [modalAberto, setModalAberto] = useState(false);
   const [editando, setEditando] = useState<Disciplina | null>(null);
   const [form, setForm] = useState<FormDisciplina>(FORM_VAZIO);
   const [salvando, setSalvando] = useState(false);
+
   const [confirmandoId, setConfirmandoId] = useState<number | null>(null);
   const [deletando, setDeletando] = useState(false);
 
-  useEffect(() => { carregarDados(); }, []);
-  const [cursoAluno, setCursoAluno] = useState<string | null>(null);
+  useEffect(() => {
+    carregarDados();
+  }, []);
 
   async function carregarDados() {
-  setCarregando(true);
-  try {
-    const [discRes, profRes] = await Promise.all([
-      api.get<Disciplina[]>("/disciplinas"),
-      isAdmin ? api.get<Professor[]>("/professores") : Promise.resolve({ data: [] }),
-    ]);
+    setCarregando(true);
 
-    let disciplinasVisiveis = discRes.data;
+    try {
+      const [discRes, profRes, cursosRes] = await Promise.all([
+        api.get<Disciplina[]>("/disciplinas"),
+        isAdmin ? api.get<Professor[]>("/professores") : Promise.resolve({ data: [] as Professor[] }),
+        api.get<Curso[]>("/cursos"),
+      ]);
 
-    // Aluno só vê disciplinas do próprio curso
-    if (usuario?.perfil === "ALUNO") {
-      const alunosRes = await api.get("/alunos");
-      const meuAluno = alunosRes.data[0];
-      if (meuAluno?.curso) {
-        setCursoAluno(meuAluno.curso);
-        disciplinasVisiveis = discRes.data.filter(
-          (d) => d.curso === meuAluno.curso
-        );
+      let disciplinasVisiveis = discRes.data;
+
+      if (usuario?.perfil === "ALUNO") {
+        const alunosRes = await api.get<Aluno[]>("/alunos");
+        const meuAluno = alunosRes.data[0];
+
+        if (meuAluno?.cursoId) {
+          disciplinasVisiveis = discRes.data.filter((disciplina) => disciplina.cursoId === meuAluno.cursoId);
+        }
       }
+
+      setDisciplinas(disciplinasVisiveis);
+      setProfessores(profRes.data);
+      setCursos(cursosRes.data.filter((curso) => curso.ativo));
+    } catch (error) {
+      console.error("[DISCIPLINAS] Erro ao carregar dados:", error);
+      toast.error("Erro ao carregar disciplinas");
+    } finally {
+      setCarregando(false);
     }
-
-    setDisciplinas(disciplinasVisiveis);
-    setProfessores(profRes.data);
-  } catch {
-    toast.error("Erro ao carregar disciplinas");
-  } finally {
-    setCarregando(false);
   }
-}
 
-  const filtradas = disciplinas.filter(
-    (d) =>
-      d.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      d.curso.toLowerCase().includes(busca.toLowerCase())
-  );
+  const filtradas = disciplinas.filter((disciplina) => {
+    const termo = busca.toLowerCase();
 
-  // Verifica se o professor logado pode editar esta disciplina
-  function podeEditar(disc: Disciplina) {
+    return (
+      disciplina.nome.toLowerCase().includes(termo) ||
+      (disciplina.curso?.nome ?? "").toLowerCase().includes(termo) ||
+      (disciplina.professor?.nome ?? "").toLowerCase().includes(termo)
+    );
+  });
+
+  function podeEditar(disciplina: Disciplina) {
     if (isAdmin) return true;
-    if (isProfessor) return true; // O backend valida se é a disciplina dele
+    if (isProfessor) return true;
     return false;
   }
 
@@ -96,32 +122,60 @@ export default function DisciplinasPage() {
     setModalAberto(true);
   }
 
-  function abrirModalEditar(disc: Disciplina) {
-    setEditando(disc);
+  function abrirModalEditar(disciplina: Disciplina) {
+    setEditando(disciplina);
     setForm({
-      nome: disc.nome, cargaHoraria: disc.cargaHoraria.toString(),
-      professorId: disc.professorId.toString(), curso: disc.curso,
-      semestre: disc.semestre.toString(), descricao: disc.descricao ?? "",
+      nome: disciplina.nome,
+      cargaHoraria: String(disciplina.cargaHoraria),
+      professorId: String(disciplina.professorId),
+      cursoId: String(disciplina.cursoId),
+      semestre: String(disciplina.semestre),
+      descricao: disciplina.descricao ?? "",
+      ativo: disciplina.ativo ?? true,
     });
     setModalAberto(true);
   }
 
   async function handleSalvar() {
-    if (isAdmin && (!form.nome || !form.cargaHoraria || !form.professorId || !form.curso || !form.semestre)) {
+    if (isAdmin && (!form.nome || !form.cargaHoraria || !form.professorId || !form.cursoId || !form.semestre)) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
+
     setSalvando(true);
+
     try {
       if (editando) {
-        // Professor envia apenas os campos que tem permissão de alterar
-        const dadosEnvio = isAdmin ? form : { descricao: form.descricao, cargaHoraria: form.cargaHoraria };
+        const dadosEnvio = isAdmin
+          ? {
+              nome: form.nome,
+              cargaHoraria: Number(form.cargaHoraria),
+              professorId: Number(form.professorId),
+              cursoId: Number(form.cursoId),
+              semestre: Number(form.semestre),
+              descricao: form.descricao,
+              ativo: form.ativo,
+            }
+          : {
+              descricao: form.descricao,
+              cargaHoraria: Number(form.cargaHoraria),
+            };
+
         await api.put(`/disciplinas/${editando.id}`, dadosEnvio);
         toast.success("Disciplina atualizada");
       } else {
-        await api.post("/disciplinas", form);
+        await api.post("/disciplinas", {
+          nome: form.nome,
+          cargaHoraria: Number(form.cargaHoraria),
+          professorId: Number(form.professorId),
+          cursoId: Number(form.cursoId),
+          semestre: Number(form.semestre),
+          descricao: form.descricao,
+          ativo: form.ativo,
+        });
         toast.success("Disciplina criada");
       }
+
       setModalAberto(false);
       carregarDados();
     } catch (e: unknown) {
@@ -134,14 +188,17 @@ export default function DisciplinasPage() {
 
   async function handleDeletar() {
     if (!confirmandoId) return;
+
     setDeletando(true);
+
     try {
       await api.delete(`/disciplinas/${confirmandoId}`);
       toast.success("Disciplina removida");
       setConfirmandoId(null);
       carregarDados();
-    } catch {
-      toast.error("Erro ao remover disciplina");
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      toast.error(msg ?? "Erro ao remover disciplina");
     } finally {
       setDeletando(false);
     }
@@ -152,123 +209,194 @@ export default function DisciplinasPage() {
   return (
     <PaginaContainer
       titulo="Disciplinas"
-      subtitulo={`${filtradas.length} disciplina(s)`}
-      acao={isAdmin ? (
-        <button className="btn-primary" onClick={abrirModalNovo}>
-          <Plus className="h-4 w-4" />Nova Disciplina
-        </button>
-      ) : undefined}
+      subtitulo={`${filtradas.length} disciplina(s) encontradas`}
+      acao={
+        isAdmin ? (
+          <button onClick={abrirModalNovo} className="btn-primary flex items-center gap-2">
+            <Plus size={18} />
+            Nova Disciplina
+          </button>
+        ) : undefined
+      }
     >
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <input type="text" placeholder="Buscar por nome ou curso..."
-          value={busca} onChange={(e) => setBusca(e.target.value)} className="input-base pl-9" />
+      <div className="mb-4 grid gap-3 md:grid-cols-[1fr_auto]">
+        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+          <Search size={18} className="text-slate-400" />
+          <input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por disciplina, curso ou professor"
+            className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+          />
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
+          <strong className="text-slate-900">{disciplinas.length}</strong> cadastradas
+        </div>
       </div>
 
       <Tabela
-        cabecalhos={["Disciplina", "Professor", "Curso", "Semestre", "C.H.", "Alunos", ...(podeEditar(disciplinas[0] ?? {} as Disciplina) ? ["Ações"] : [])]}
+        cabecalhos={["Disciplina", "Professor", "Curso", "Carga", "Semestre", "Notas", "Status", "Ações"]}
         vazia={filtradas.length === 0}
-        componenteVazio={<EstadoVazio icone={BookOpen} titulo="Nenhuma disciplina encontrada" />}
+        componenteVazio={
+          <EstadoVazio
+            icone={BookOpen}
+            titulo="Nenhuma disciplina encontrada"
+            descricao="Cadastre disciplinas vinculadas aos cursos existentes."
+          />
+        }
       >
-        {filtradas.map((disc) => (
-          <tr key={disc.id} className="hover:bg-slate-50 transition-colors">
+        {filtradas.map((disciplina) => (
+          <tr key={disciplina.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/70">
             <td className="px-4 py-3">
-              <p className="font-medium text-slate-800">{disc.nome}</p>
-              {disc.descricao && <p className="mt-0.5 truncate max-w-xs text-xs text-slate-500">{disc.descricao}</p>}
+              <p className="font-medium text-slate-900">{disciplina.nome}</p>
+              {disciplina.descricao && <p className="mt-1 max-w-md text-xs text-slate-500">{disciplina.descricao}</p>}
             </td>
-            <td className="px-4 py-3 text-sm text-slate-600">{disc.professor?.nome ?? "—"}</td>
-            <td className="px-4 py-3 text-sm text-slate-600">{disc.curso}</td>
+            <td className="px-4 py-3 text-sm text-slate-600">{disciplina.professor?.nome ?? "—"}</td>
+            <td className="px-4 py-3 text-sm text-slate-600">{disciplina.curso?.nome ?? "Curso não informado"}</td>
+            <td className="px-4 py-3 text-sm text-slate-600">{disciplina.cargaHoraria}h</td>
+            <td className="px-4 py-3 text-sm text-slate-600">{disciplina.semestre}</td>
+            <td className="px-4 py-3 text-sm text-slate-600">{disciplina._count?.notas ?? 0}</td>
             <td className="px-4 py-3">
-              <Badge texto={`${disc.semestre}º sem.`} variante="info" />
+              <Badge texto={disciplina.ativo === false ? "Inativa" : "Ativa"} variante={disciplina.ativo === false ? "neutro" : "aprovado"} />
             </td>
-            <td className="px-4 py-3 text-sm text-slate-600">{disc.cargaHoraria}h</td>
-            <td className="px-4 py-3 text-sm text-slate-600">{disc._count?.notas ?? 0}</td>
-            {(isAdmin || isProfessor) && (
-              <td className="px-4 py-3">
-                <div className="flex items-center gap-1">
-                  <button onClick={() => abrirModalEditar(disc)}
-                    className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors">
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
+            <td className="px-4 py-3">
+              {(isAdmin || isProfessor) && (
+                <div className="flex items-center gap-2">
+                  {podeEditar(disciplina) && (
+                    <button
+                      onClick={() => abrirModalEditar(disciplina)}
+                      className="rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                      title="Editar disciplina"
+                    >
+                      <Pencil size={16} />
+                    </button>
+                  )}
+
                   {isAdmin && (
-                    <button onClick={() => setConfirmandoId(disc.id)}
-                      className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors">
-                      <Trash2 className="h-3.5 w-3.5" />
+                    <button
+                      onClick={() => setConfirmandoId(disciplina.id)}
+                      className="rounded p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                      title="Excluir disciplina"
+                    >
+                      <Trash2 size={16} />
                     </button>
                   )}
                 </div>
-              </td>
-            )}
+              )}
+            </td>
           </tr>
         ))}
       </Tabela>
 
-      {/* Modal de criação/edição */}
-      <Modal aberto={modalAberto} onFechar={() => setModalAberto(false)}
-        titulo={editando ? "Editar Disciplina" : "Nova Disciplina"} largura="lg">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {/* Admin edita tudo. Professor edita apenas campos informativos */}
+      <Modal aberto={modalAberto} onFechar={() => setModalAberto(false)} titulo={editando ? "Editar Disciplina" : "Nova Disciplina"} largura="lg">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {isAdmin && (
-            <div className="sm:col-span-2">
-              <CampoForm label="Nome da disciplina" obrigatorio>
-                <input className="input-base" value={form.nome}
-                  onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder="Nome da disciplina" disabled={!!editando} />
-              </CampoForm>
-            </div>
+            <CampoForm label="Nome da disciplina" obrigatorio>
+              <input
+                value={form.nome}
+                onChange={(e) => setForm({ ...form, nome: e.target.value })}
+                className="input-base"
+                placeholder="Ex.: Banco de Dados Relacional"
+              />
+            </CampoForm>
           )}
 
           {isAdmin && (
             <CampoForm label="Professor responsável" obrigatorio>
-              <select className="input-base" value={form.professorId}
-                onChange={(e) => setForm({ ...form, professorId: e.target.value })}>
+              <select
+                value={form.professorId}
+                onChange={(e) => setForm({ ...form, professorId: e.target.value })}
+                className="input-base"
+              >
                 <option value="">Selecione...</option>
-                {professores.map((p) => (
-                  <option key={p.id} value={p.id}>{p.nome}</option>
+                {professores.map((professor) => (
+                  <option key={professor.id} value={professor.id}>
+                    {professor.nome}
+                  </option>
                 ))}
               </select>
             </CampoForm>
           )}
 
-          <CampoForm label="Carga Horária (horas)" obrigatorio={isAdmin}>
-            <input className="input-base" type="number" min="1" value={form.cargaHoraria}
-              onChange={(e) => setForm({ ...form, cargaHoraria: e.target.value })} placeholder="80" />
+          <CampoForm label="Carga Horária (horas)" obrigatorio>
+            <input
+              type="number"
+              min={1}
+              value={form.cargaHoraria}
+              onChange={(e) => setForm({ ...form, cargaHoraria: e.target.value })}
+              className="input-base"
+              placeholder="80"
+            />
           </CampoForm>
 
           {isAdmin && (
             <>
-              <div className="sm:col-span-1">
-                <CampoForm label="Curso" obrigatorio>
-                  <input className="input-base" value={form.curso}
-                    onChange={(e) => setForm({ ...form, curso: e.target.value })} placeholder="Nome do curso" />
-                </CampoForm>
-              </div>
+              <CampoForm label="Curso" obrigatorio>
+                <select value={form.cursoId} onChange={(e) => setForm({ ...form, cursoId: e.target.value })} className="input-base">
+                  <option value="">Selecione...</option>
+                  {cursos.map((curso) => (
+                    <option key={curso.id} value={curso.id}>
+                      {curso.nome}
+                    </option>
+                  ))}
+                </select>
+              </CampoForm>
+
               <CampoForm label="Semestre" obrigatorio>
-                <input className="input-base" type="number" min="1" max="8" value={form.semestre}
-                  onChange={(e) => setForm({ ...form, semestre: e.target.value })} placeholder="1" />
+                <input
+                  type="number"
+                  min={1}
+                  value={form.semestre}
+                  onChange={(e) => setForm({ ...form, semestre: e.target.value })}
+                  className="input-base"
+                  placeholder="1"
+                />
               </CampoForm>
             </>
           )}
 
-          <div className="sm:col-span-2">
+          <div className="md:col-span-2">
             <CampoForm label="Descrição">
-              <textarea className="input-base resize-none" rows={3} value={form.descricao}
+              <textarea
+                value={form.descricao}
                 onChange={(e) => setForm({ ...form, descricao: e.target.value })}
-                placeholder="Descrição da disciplina, ementa, objetivos..." />
+                className="input-base min-h-24 resize-none"
+                placeholder="Descrição da disciplina, ementa, objetivos..."
+              />
             </CampoForm>
           </div>
+
+          {isAdmin && editando && (
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.ativo}
+                onChange={(e) => setForm({ ...form, ativo: e.target.checked })}
+              />
+              Disciplina ativa
+            </label>
+          )}
         </div>
+
         <div className="mt-5 flex justify-end gap-2">
-          <button className="btn-secondary" onClick={() => setModalAberto(false)}>Cancelar</button>
+          <button className="btn-secondary" onClick={() => setModalAberto(false)}>
+            Cancelar
+          </button>
           <button className="btn-primary" onClick={handleSalvar} disabled={salvando}>
             {salvando ? "Salvando..." : editando ? "Salvar alterações" : "Criar disciplina"}
           </button>
         </div>
       </Modal>
 
-      <ModalConfirmacao aberto={confirmandoId !== null} onFechar={() => setConfirmandoId(null)}
-        onConfirmar={handleDeletar} titulo="Remover Disciplina"
-        descricao="Tem certeza? Esta ação removerá a disciplina e todas as notas associadas."
-        carregando={deletando} />
+      <ModalConfirmacao
+        aberto={confirmandoId !== null}
+        onFechar={() => setConfirmandoId(null)}
+        onConfirmar={handleDeletar}
+        titulo="Remover Disciplina"
+        descricao="Tem certeza? Esta ação removerá a disciplina e as notas vinculadas a ela."
+        carregando={deletando}
+      />
     </PaginaContainer>
   );
 }

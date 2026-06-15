@@ -1,18 +1,17 @@
 /**
  * Layout das Tabs — Área autenticada
  * Filtra as abas visíveis com base no perfil do usuário logado.
- * Admin vê tudo | Professor vê suas abas | Aluno vê as suas.
  */
 
 import { Tabs, Redirect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { View } from "react-native";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { Spinner, Cores } from "@/components/ui";
-import { View } from "react-native";
 
 type NomeIcone = React.ComponentProps<typeof Ionicons>["name"];
 
-// Definição de cada aba com seus metadados de acesso
 interface ConfigAba {
   nome: string;
   titulo: string;
@@ -42,6 +41,13 @@ const ABAS: ConfigAba[] = [
     iconeAtivo: "person",
     iconeInativo: "person-outline",
     perfisPermitidos: ["ADMIN", "ALUNO"],
+  },
+  {
+    nome: "cursos",
+    titulo: "Cursos",
+    iconeAtivo: "school",
+    iconeInativo: "school-outline",
+    perfisPermitidos: ["ADMIN", "PROFESSOR", "ALUNO"],
   },
   {
     nome: "disciplinas",
@@ -78,44 +84,28 @@ export default function TabsLayout() {
 
   if (carregando) {
     return (
-      <View style={{ flex: 1, backgroundColor: Cores.fundo }}>
+      <View style={{ flex: 1 }}>
         <Spinner />
       </View>
     );
   }
 
-  // Redireciona para login se não estiver autenticado
   if (!usuario) return <Redirect href="/login" />;
 
   return (
     <Tabs
       screenOptions={{
-        // Estilo da barra de abas inferior
+        headerStyle: { backgroundColor: Cores.branco },
+        headerTitleStyle: { color: Cores.textoPrincipal, fontWeight: "700" },
         tabBarActiveTintColor: Cores.primario,
-        tabBarInactiveTintColor: "#94a3b8",
+        tabBarInactiveTintColor: Cores.textoSecundario,
         tabBarStyle: {
           backgroundColor: Cores.branco,
           borderTopColor: Cores.borda,
-          borderTopWidth: 1,
-          paddingTop: 4,
-          height: 60,
         },
-        tabBarLabelStyle: {
-          fontSize: 10, fontWeight: "500", marginBottom: 4,
-        },
-        // Header superior com nome do sistema e perfil do usuário
-        headerStyle: { backgroundColor: Cores.primario },
-        headerTintColor: "#fff",
-        headerTitleStyle: { fontWeight: "600", fontSize: 16 },
-        headerRight: () => (
-          <View style={{ marginRight: 16 }}>
-            <Ionicons name="person-circle-outline" size={24} color="#fff" />
-          </View>
-        ),
       }}
     >
       {ABAS.map((aba) => {
-        // Oculta a aba se o perfil do usuário não tiver permissão
         const temAcesso = aba.perfisPermitidos.includes(usuario.perfil);
 
         return (
@@ -124,8 +114,7 @@ export default function TabsLayout() {
             name={aba.nome}
             options={{
               title: aba.titulo,
-              // tabBarButton retornando null oculta visualmente a aba
-              tabBarButton: temAcesso ? undefined : () => null,
+              href: temAcesso ? undefined : null,
               tabBarIcon: ({ focused, color }) => (
                 <Ionicons
                   name={focused ? aba.iconeAtivo : aba.iconeInativo}
