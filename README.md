@@ -1,28 +1,105 @@
-# App Scholar — Sistema Acadêmico Web e Mobile
+# App Scholar — Sistema Acadêmico Multiplataforma
 
-Projeto desenvolvido para a disciplina de **Programação Mobile** da **FATEC Jacareí**.
+Sistema acadêmico desenvolvido para gerenciamento de uma instituição de ensino, com módulos para **alunos**, **professores**, **cursos**, **disciplinas**, **notas** e **boletim acadêmico**.
 
-O **App Scholar** é um sistema acadêmico completo, com backend, painel web e aplicativo mobile. A proposta é permitir o gerenciamento de alunos, professores, disciplinas e notas, com controle de acesso por perfil.
-
-O sistema possui três perfis principais:
-
-- **Administrador:** gerencia usuários, alunos, professores, disciplinas e notas.
-- **Professor:** visualiza suas disciplinas e lança notas dos alunos.
-- **Aluno:** consulta seus dados, disciplinas e boletim acadêmico.
+O projeto foi desenvolvido com arquitetura separada em **backend**, **frontend web** e **aplicativo mobile**, utilizando API REST para comunicação entre as camadas e PostgreSQL como banco de dados.
 
 ---
 
-## Tecnologias utilizadas
+## 📌 Objetivo do projeto
+
+O **App Scholar** tem como objetivo centralizar e facilitar o gerenciamento acadêmico de uma instituição, permitindo que administradores, professores e alunos acessem funcionalidades específicas de acordo com seu perfil.
+
+O sistema permite:
+
+- cadastro e autenticação de usuários;
+- gerenciamento de alunos;
+- gerenciamento de professores;
+- gerenciamento de cursos;
+- gerenciamento de disciplinas;
+- lançamento e alteração de notas;
+- visualização de boletim;
+- acesso web e mobile.
+
+---
+
+## 🧩 Novo módulo implementado: Cursos
+
+Foi implementado um módulo complementar de **cadastro e gerenciamento de cursos**, atendendo aos seguintes requisitos:
+
+- tela de listagem de cursos existentes;
+- tela de cadastro de cursos;
+- edição de cursos;
+- exclusão/desativação de cursos;
+- integração com PostgreSQL via Prisma;
+- criação de API REST para cursos;
+- ajuste do módulo de alunos para vinculação ao curso;
+- ajuste do módulo de disciplinas para vinculação ao curso;
+- ajuste da tela de notas para exibir corretamente o curso relacionado.
+
+### Campos do cadastro de curso
+
+Cada curso possui:
+
+- nome do curso;
+- área;
+- duração em semestres;
+- coordenador;
+- descrição;
+- status ativo/inativo.
+
+---
+
+## 👥 Perfis de acesso
+
+O sistema possui três perfis principais:
+
+### Administrador
+
+Possui acesso completo ao sistema.
+
+Funcionalidades:
+
+- gerenciar alunos;
+- gerenciar professores;
+- gerenciar cursos;
+- gerenciar disciplinas;
+- lançar e alterar notas;
+- acessar painel administrativo.
+
+### Professor
+
+Possui acesso às informações acadêmicas relacionadas às suas disciplinas.
+
+Funcionalidades:
+
+- visualizar disciplinas;
+- lançar notas;
+- consultar alunos relacionados.
+
+### Aluno
+
+Possui acesso de consulta.
+
+Funcionalidades:
+
+- visualizar o próprio boletim;
+- consultar informações acadêmicas disponíveis.
+
+---
+
+## 🛠️ Tecnologias utilizadas
 
 ### Backend
 
 - Node.js
-- Express
 - TypeScript
+- Express
 - Prisma ORM
 - PostgreSQL
 - JWT para autenticação
-- bcryptjs para criptografia de senhas
+- Bcrypt para criptografia de senha
+- API REST
 
 ### Frontend Web
 
@@ -31,106 +108,116 @@ O sistema possui três perfis principais:
 - TypeScript
 - Tailwind CSS
 - Axios
-- React Hot Toast
 - Lucide React
 
 ### Mobile
 
 - React Native
-- Expo
-- Expo Router
+- Expo / Expo Go
+- Expo SDK 54
 - TypeScript
 - Axios
 - AsyncStorage
-- Expo Go
+- Expo Router
+
+### Banco de dados
+
+- PostgreSQL
+- Prisma Migrate
+- Prisma Client
+- Seed para dados de teste
 
 ---
 
-## Funcionalidades
-
-### Autenticação
-
-- Login com e-mail e senha
-- Token JWT
-- Controle de sessão
-- Redirecionamento conforme o perfil do usuário
-- Proteção de rotas
-
-### Administrador
-
-- Cadastro e gerenciamento de alunos
-- Cadastro e gerenciamento de professores
-- Cadastro e gerenciamento de disciplinas
-- Lançamento e edição de notas
-- Visualização geral do sistema
-
-### Professor
-
-- Visualização de professores
-- Visualização das próprias disciplinas
-- Consulta de alunos
-- Lançamento de notas
-- Consulta de boletins relacionados às suas turmas
-
-### Aluno
-
-- Consulta do próprio boletim
-- Visualização de disciplinas
-- Visualização e edição de dados pessoais
-- Troca de senha
-- Acesso pelo aplicativo mobile via Expo Go
-
----
-
-## Estrutura do projeto
+## 📁 Estrutura do projeto
 
 ```txt
-app-scholar/
-├── backend/                  # API Node.js + Express + Prisma
+App_Scholar/
+├── backend/
 │   ├── prisma/
-│   │   ├── schema.prisma     # Modelagem do banco de dados
-│   │   └── seed.ts           # Dados iniciais para teste
-│   └── src/
-│       ├── controllers/      # Regras de negócio
-│       ├── routes/           # Rotas da API
-│       ├── middleware/       # Autenticação e permissões
-│       ├── lib/              # Configurações auxiliares
-│       └── server.ts         # Inicialização do servidor
+│   │   ├── schema.prisma
+│   │   └── seed.ts
+│   ├── src/
+│   │   ├── controllers/
+│   │   ├── routes/
+│   │   ├── middleware/
+│   │   ├── lib/
+│   │   └── server.ts
+│   └── package.json
 │
-├── frontend/                 # Painel web em Next.js
-│   └── src/
-│       ├── app/              # Páginas e rotas
-│       ├── components/       # Componentes reutilizáveis
-│       ├── contexts/         # Contexto de autenticação
-│       ├── lib/              # Cliente Axios
-│       └── types/            # Tipagens TypeScript
+├── frontend/
+│   ├── src/
+│   │   ├── app/
+│   │   │   └── dashboard/
+│   │   ├── components/
+│   │   ├── lib/
+│   │   └── types/
+│   └── package.json
 │
-├── mobile/                   # Aplicativo mobile em Expo
-│   ├── app/                  # Rotas do Expo Router
-│   ├── components/           # Componentes visuais
-│   ├── contexts/             # Contexto de autenticação
-│   ├── constants/            # Configurações, cores e API
-│   ├── lib/                  # Cliente Axios
-│   └── types/                # Tipagens TypeScript
+├── mobile/
+│   ├── app/
+│   ├── assets/
+│   ├── components/
+│   ├── contexts/
+│   ├── lib/
+│   ├── types/
+│   ├── app.json
+│   └── package.json
 │
-├── package.json              # Scripts principais do monorepo
 └── README.md
 ```
 
 ---
 
-## Requisitos
+## 🗄️ Modelagem principal do banco
 
-Antes de rodar o projeto, é necessário ter instalado:
+A modelagem foi ajustada para que **Curso** seja uma entidade própria no banco de dados.
 
-- Node.js 18 ou superior
-- npm
-- PostgreSQL
-- Expo Go no celular, caso queira testar o aplicativo mobile
+Relacionamentos principais:
+
+```txt
+Usuario
+ ├── Aluno
+ └── Professor
+
+Curso
+ ├── Alunos
+ ├── Disciplinas
+ └── Coordenador Professor
+
+Disciplina
+ ├── Professor
+ ├── Curso
+ └── Notas
+
+Nota
+ ├── Aluno
+ └── Disciplina
+```
+
+### Principais tabelas
+
+- `usuarios`
+- `alunos`
+- `professores`
+- `cursos`
+- `disciplinas`
+- `notas`
 
 ---
 
-## Configuração do backend
+## 🚀 Como executar o projeto
+
+### 1. Clonar o repositório
+
+```bash
+git clone https://github.com/GustavoHammes/App_Scholar.git
+cd App_Scholar
+```
+
+---
+
+## ⚙️ Configuração do backend
 
 Acesse a pasta do backend:
 
@@ -138,267 +225,396 @@ Acesse a pasta do backend:
 cd backend
 ```
 
-Crie o arquivo `.env` com base no exemplo:
+Instale as dependências:
 
 ```bash
-cp .env.example .env
+npm install
 ```
 
-Configure a conexão com o PostgreSQL:
+Crie um arquivo `.env` dentro da pasta `backend`:
 
 ```env
-DATABASE_URL="postgresql://postgres:sua_senha@localhost:5432/app_scholar"
-JWT_SECRET="sua_chave_secreta_aqui"
-JWT_EXPIRES_IN="7d"
+DATABASE_URL="postgresql://usuario:senha@localhost:5432/app_scholar"
+JWT_SECRET="sua_chave_secreta"
 PORT=3001
-NODE_ENV="development"
 ```
 
-Depois, volte para a raiz do projeto:
+> Ajuste o `DATABASE_URL` conforme o usuário, senha, porta e nome do banco configurados no PostgreSQL.
+
+Formate e gere o Prisma Client:
 
 ```bash
-cd ..
+npx prisma format
+npx prisma generate
+```
+
+Aplique o schema no banco:
+
+```bash
+npx prisma migrate dev
+```
+
+Ou, em ambiente de teste, sincronize diretamente:
+
+```bash
+npx prisma db push
+```
+
+Execute o seed:
+
+```bash
+npx prisma db seed
+```
+
+Inicie o backend:
+
+```bash
+npm run dev
+```
+
+O backend ficará disponível em:
+
+```txt
+http://localhost:3001
 ```
 
 ---
 
-## Configuração do frontend web
+## 💻 Configuração do frontend web
 
-Acesse a pasta do frontend:
+Em outro terminal, acesse a pasta do frontend:
 
 ```bash
 cd frontend
 ```
 
-Crie o arquivo `.env.local` com base no exemplo:
+Instale as dependências:
 
 ```bash
-cp .env.local.example .env.local
+npm install
 ```
 
-Conteúdo esperado:
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:3001
-```
-
-Depois, volte para a raiz:
-
-```bash
-cd ..
-```
-
----
-
-## Instalação
-
-Na raiz do projeto, instale todas as dependências:
-
-```bash
-npm run install:all
-```
-
-Esse comando instala as dependências da raiz, do backend, do frontend e do mobile.
-
----
-
-## Banco de dados
-
-Para criar as tabelas e popular o banco com dados de teste, execute:
-
-```bash
-npm run db:setup
-```
-
-Para resetar o banco e popular novamente:
-
-```bash
-npm run db:reset
-```
-
-O seed cria usuários de teste, professores, alunos, cursos, disciplinas e notas.
-
----
-
-## Como rodar o backend e o frontend web
-
-Na raiz do projeto, execute:
+Inicie o frontend:
 
 ```bash
 npm run dev
 ```
 
-Esse comando inicia:
-
-- Backend: `http://localhost:3001`
-- Frontend web: `http://localhost:3000`
-
-Teste a API pelo health check:
+O frontend ficará disponível em:
 
 ```txt
-http://localhost:3001/health
+http://localhost:3000
 ```
 
 ---
 
-## Como rodar o aplicativo mobile com Expo Go
+## 📱 Configuração do mobile
 
-Acesse a pasta do app mobile:
+Em outro terminal, acesse a pasta do mobile:
 
 ```bash
 cd mobile
 ```
 
-Antes de iniciar, configure o IP local da sua máquina no arquivo:
-
-```txt
-mobile/constants/api.ts
-```
-
-Procure esta linha:
-
-```ts
-const IP_LOCAL = "SEU_IP_AQUI";
-```
-
-Substitua pelo IPv4 do computador onde o backend está rodando.
-
-No Windows, descubra o IP com:
+Instale as dependências:
 
 ```bash
-ipconfig
+npm install
 ```
 
-Procure por **Endereço IPv4**.
-
-Exemplo:
-
-```ts
-const IP_LOCAL = "192.168.1.105";
-```
-
-Depois rode:
+Corrija dependências compatíveis com o Expo SDK utilizado:
 
 ```bash
-npm run dev
+npx expo install --fix
 ```
 
-Abra o aplicativo **Expo Go** no celular e escaneie o QR Code exibido no terminal.
+Verifique a saúde do projeto Expo:
 
-Importante: o computador e o celular precisam estar conectados na mesma rede Wi-Fi.
+```bash
+npx expo-doctor
+```
+
+Inicie o aplicativo:
+
+```bash
+npx expo start -c
+```
+
+Depois, escaneie o QR Code com o **Expo Go**.
 
 ---
 
-## Dados de acesso para teste
+## 🔐 Acessos de teste
 
-### Administrador
+Após rodar o seed, o terminal exibirá os acessos disponíveis para teste.
+
+Exemplos de usuários:
+
+| Perfil | E-mail | Senha |
+|---|---|---|
+| Administrador | `admin@scholar.fatec.br` | `Admin@123` |
+| Professor | `carlos.souza@scholar.fatec.br` | `Prof@2024` |
+| Professor | `ana.lima@scholar.fatec.br` | `Prof@2024` |
+| Aluno DSM | `ana.santos1.dsm@aluno.fatec.br` | `Aluno@2024` |
+| Aluno GEI | `ana.santos1.gei@aluno.fatec.br` | `Aluno@2024` |
+| Aluno MAN | `ana.santos1.man@aluno.fatec.br` | `Aluno@2024` |
+| Aluno ADS | `ana.santos1.ads@aluno.fatec.br` | `Aluno@2024` |
+
+---
+
+## 📚 Principais rotas da API
+
+### Autenticação
 
 ```txt
-E-mail: admin@scholar.fatec.br
-Senha: Admin@123
+POST /api/auth/login
+POST /api/auth/primeiro-acesso
+GET  /api/auth/me
 ```
 
-### Professor
+### Alunos
 
 ```txt
-E-mail: carlos.souza@scholar.fatec.br
-Senha: Prof@2024
+GET    /api/alunos
+GET    /api/alunos/:id
+POST   /api/alunos
+PUT    /api/alunos/:id
+DELETE /api/alunos/:id
+GET    /api/alunos/:id/boletim
 ```
 
+### Professores
+
 ```txt
-E-mail: ana.lima@scholar.fatec.br
-Senha: Prof@2024
+GET    /api/professores
+GET    /api/professores/:id
+POST   /api/professores
+PUT    /api/professores/:id
+DELETE /api/professores/:id
 ```
 
-### Aluno
-
-Os alunos são gerados automaticamente pelo seed.
+### Cursos
 
 ```txt
-Senha padrão dos alunos: Aluno@2024
+GET    /api/cursos
+GET    /api/cursos/:id
+POST   /api/cursos
+PUT    /api/cursos/:id
+DELETE /api/cursos/:id
 ```
 
-Caso algum e-mail específico não funcione, confira os usuários gerados no arquivo:
+### Disciplinas
 
 ```txt
-backend/prisma/seed.ts
+GET    /api/disciplinas
+GET    /api/disciplinas/:id
+POST   /api/disciplinas
+PUT    /api/disciplinas/:id
+DELETE /api/disciplinas/:id
+```
+
+### Notas
+
+```txt
+GET    /api/notas
+POST   /api/notas
+PUT    /api/notas/:id
+DELETE /api/notas/:id
 ```
 
 ---
 
-## Regra de cálculo das notas
+## 🧪 Exemplos de teste da API no PowerShell
 
-A média do aluno é calculada automaticamente pelo backend:
+### Login como administrador
 
-```txt
-média = (nota1 + nota2) / 2
+```powershell
+$login = Invoke-RestMethod `
+  -Uri "http://localhost:3001/api/auth/login" `
+  -Method POST `
+  -ContentType "application/json" `
+  -Body '{
+    "email": "admin@scholar.fatec.br",
+    "senha": "Admin@123"
+  }'
+
+$TOKEN = $login.token
 ```
 
-Situações possíveis:
+### Listar cursos
 
-```txt
-Média maior ou igual a 6.0  → Aprovado
-Média maior ou igual a 4.0  → Recuperação
-Média menor que 4.0        → Reprovado
+```powershell
+Invoke-RestMethod `
+  -Uri "http://localhost:3001/api/cursos" `
+  -Method GET `
+  -Headers @{ Authorization = "Bearer $TOKEN" }
+```
+
+### Cadastrar curso
+
+```powershell
+Invoke-RestMethod `
+  -Uri "http://localhost:3001/api/cursos" `
+  -Method POST `
+  -Headers @{
+    Authorization = "Bearer $TOKEN"
+    "Content-Type" = "application/json"
+  } `
+  -Body '{
+    "nome": "Logística e Transportes",
+    "area": "Gestão e Negócios",
+    "duracaoSemestres": 6,
+    "coordenadorId": 1,
+    "descricao": "Curso voltado para logística, transporte e gestão operacional."
+  }'
+```
+
+### Cadastrar disciplina vinculada a curso
+
+```powershell
+Invoke-RestMethod `
+  -Uri "http://localhost:3001/api/disciplinas" `
+  -Method POST `
+  -Headers @{
+    Authorization = "Bearer $TOKEN"
+    "Content-Type" = "application/json"
+  } `
+  -Body '{
+    "nome": "Desenvolvimento Mobile",
+    "cargaHoraria": 80,
+    "professorId": 1,
+    "cursoId": 1,
+    "semestre": 4,
+    "descricao": "Disciplina focada em desenvolvimento de aplicativos móveis."
+  }'
 ```
 
 ---
 
-## Permissões por perfil
+## 📌 Funcionalidades implementadas
 
-| Funcionalidade | Admin | Professor | Aluno |
-|---|---:|---:|---:|
-| Visualizar alunos | Sim | Sim | Não |
-| Cadastrar alunos | Sim | Não | Não |
-| Editar aluno | Sim | Não | Apenas próprios dados |
-| Visualizar professores | Sim | Sim | Sim |
-| Cadastrar professores | Sim | Não | Não |
-| Editar professor | Sim | Apenas próprios dados | Não |
-| Visualizar disciplinas | Sim | Próprias disciplinas | Sim |
-| Cadastrar disciplinas | Sim | Não | Não |
-| Lançar notas | Sim | Sim | Não |
-| Visualizar boletim | Sim | Sim | Apenas próprio boletim |
+### Backend
 
----
+- autenticação com JWT;
+- autorização por perfil;
+- CRUD de alunos;
+- CRUD de professores;
+- CRUD de cursos;
+- CRUD de disciplinas;
+- CRUD de notas;
+- boletim do aluno;
+- seed com dados de teste;
+- relacionamento entre alunos, cursos, disciplinas e notas.
 
-## Scripts disponíveis
+### Frontend Web
 
-| Comando | Descrição |
-|---|---|
-| `npm run install:all` | Instala as dependências da raiz, backend, frontend e mobile |
-| `npm run dev` | Inicia backend e frontend web ao mesmo tempo |
-| `npm run dev:backend` | Inicia apenas o backend |
-| `npm run dev:frontend` | Inicia apenas o frontend web |
-| `npm run dev:mobile` | Inicia o aplicativo mobile com Expo |
-| `npm run db:setup` | Sincroniza o banco e executa o seed |
-| `npm run db:reset` | Reseta o banco e executa o seed novamente |
-| `npm run build` | Gera build do backend e frontend |
+- login;
+- dashboard administrativo;
+- tela de alunos;
+- tela de professores;
+- tela de cursos;
+- tela de disciplinas;
+- tela de lançamento de notas;
+- tela de perfil;
+- proteção de rotas;
+- layout com menu lateral;
+- interface adaptada aos perfis.
 
----
+### Mobile
 
-## Como testar o projeto
-
-1. Inicie o PostgreSQL.
-2. Configure o `.env` do backend.
-3. Rode `npm run install:all`.
-4. Rode `npm run db:setup`.
-5. Rode `npm run dev`.
-6. Acesse o frontend web em `http://localhost:3000`.
-7. Para testar no celular, rode `npm run dev:mobile` e abra pelo Expo Go.
+- autenticação;
+- navegação por abas;
+- integração com API REST;
+- telas acadêmicas principais;
+- compatibilidade com Expo SDK 54;
+- execução via Expo Go.
 
 ---
 
-## Observações sobre o mobile
+## 🧯 Problemas comuns e soluções
 
-O aplicativo mobile foi desenvolvido para funcionar no celular usando **Expo Go**.
+### Erro: `Objects are not valid as a React child`
 
-Como o backend roda localmente no computador, é necessário configurar o IP local da máquina no arquivo `mobile/constants/api.ts`.
+Esse erro acontece quando o React tenta renderizar um objeto diretamente.
 
-O uso de `localhost` não funciona em celular físico, pois o celular entende `localhost` como ele mesmo, e não como o computador onde o backend está rodando.
+Exemplo incorreto:
+
+```tsx
+{aluno.curso}
+```
+
+Forma correta:
+
+```tsx
+{aluno.curso?.nome ?? "Curso não informado"}
+```
+
+Isso ocorre porque `curso` agora é um objeto relacionado no Prisma, não mais uma string.
 
 ---
 
-## Autor
+### Erro: `The table public.notas does not exist`
 
-Desenvolvido por **Gustavo Hammes**  
-FATEC Jacareí — Desenvolvimento de Software Multiplataforma
+Esse erro indica que o Prisma Client foi gerado, mas as tabelas ainda não foram criadas no PostgreSQL.
+
+Solução em ambiente de desenvolvimento:
+
+```bash
+npx prisma db push --force-reset
+npx prisma generate
+npx prisma db seed
+```
+
+---
+
+### Erro: `EPERM operation not permitted query_engine-windows.dll.node`
+
+Esse erro acontece quando algum processo Node está usando o Prisma Client no Windows.
+
+Solução:
+
+```powershell
+taskkill /F /IM node.exe /T
+Remove-Item -Recurse -Force .\node_modules\.prisma
+npx prisma generate
+```
+
+---
+
+### Erro no Expo: `Cannot find module babel-preset-expo`
+
+Instale o preset:
+
+```bash
+npm install -D babel-preset-expo
+npx expo start -c
+```
+
+---
+
+### Erro no Expo: assets não encontrados
+
+Verifique se existem estes arquivos:
+
+```txt
+mobile/assets/icon.png
+mobile/assets/splash.png
+mobile/assets/adaptive-icon.png
+mobile/assets/favicon.png
+```
+
+Caso não existam, crie os arquivos ou ajuste os caminhos no `app.json`.
+
+---
+
+## 🧑‍💻 Autor
+
+Desenvolvido por **Gustavo Hammes**.
+
+Projeto acadêmico desenvolvido para a disciplina de desenvolvimento de software multiplataforma.
+
+---
+
+## 📄 Licença
+
+Este projeto é de uso acadêmico.
